@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using TimeTracker.Data;
-using TimeTracker.Domain;
+using FalconTimeTracker.Data;
+using FalconTimeTracker.Domain;
 
-namespace TimeTracker.Features.Reports;
+namespace FalconTimeTracker.Features.Reports;
 
 public static class GetReport
 {

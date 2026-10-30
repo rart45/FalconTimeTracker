@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using TimeTracker.Data;
-using TimeTracker.Domain;
-using TimeTracker.Features.Employees;
+using FalconTimeTracker.Data;
+using FalconTimeTracker.Domain;
+using FalconTimeTracker.Features.Employees;
 
-namespace TimeTracker.Features.Timer;
+namespace FalconTimeTracker.Features.Timer;
 
 public static class StartTimer
 {

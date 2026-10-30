@@ -1,6 +1,6 @@
-using TimeTracker.Domain;
+using FalconTimeTracker.Domain;
 
-namespace TimeTracker.Tests.Domain;
+namespace FalconTimeTracker.Tests.Domain;
 
 public class TimePeriodTests
 {

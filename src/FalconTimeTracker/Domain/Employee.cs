@@ -1,4 +1,4 @@
-namespace TimeTracker.Domain;
+namespace FalconTimeTracker.Domain;
 
 public class Employee(string name)
 {

@@ -1,4 +1,6 @@
-# Учёт рабочего времени
+# FalconTimeTracker
+
+Учёт рабочего времени, тестовое задание для Falcon AI.
 
 Веб-приложение для небольшой команды. Можно добавлять сотрудников, запускать и останавливать таймер с описанием задачи и смотреть, сколько каждый отработал за период. Данные хранятся в SQLite и не пропадают после перезапуска.
 
@@ -6,17 +8,15 @@
 
 **Стек.** .NET 10, ASP.NET Core Minimal API, EF Core и SQLite. Интерфейс сделан одной HTML-страницей на чистом JS, без сборки. Тесты на xUnit, для проверки API используется WebApplicationFactory.
 
-Время работы: _заполнить_.
-
 ## Запуск
 
 Нужен [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
 
 ```bash
-dotnet run --project src/TimeTracker --launch-profile http
+dotnet run --project src/FalconTimeTracker --launch-profile http
 ```
 
-Откройте http://localhost:5197. При первом запуске создаётся файл базы `src/TimeTracker/timetracker.db`, миграции применяются сами.
+Откройте http://localhost:5197. При первом запуске создаётся файл базы `src/FalconTimeTracker/falcontimetracker.db`, миграции применяются сами.
 
 Тесты:
 
@@ -37,7 +37,7 @@ dotnet test
 ## Устройство
 
 ```
-src/TimeTracker/
+src/FalconTimeTracker/
   Domain/            модель и правила, ничего не знает про HTTP и базу
     Employee.cs        StartTimer / StopTimer, правило «один запущенный таймер»
     TimeEntry.cs       запись времени, нельзя остановить раньше старта
@@ -49,7 +49,7 @@ src/TimeTracker/
   Data/              AppDb (EF Core) и миграции
   wwwroot/           index.html
   Program.cs         регистрация сервисов и эндпоинтов
-tests/TimeTracker.Tests/
+tests/FalconTimeTracker.Tests/
   Domain/            тесты правил: без сервера и базы, миллисекунды
   Api/               сквозные сценарии через HTTP на настоящей SQLite
 ```
@@ -66,7 +66,7 @@ tests/TimeTracker.Tests/
 
 1. В модель добавить метод `TimeEntry.Rename(string task)` с той же проверкой текста, что и при создании. Написать на него тест в `tests/.../Domain`.
 2. Создать `Features/Entries/RenameEntry.cs` с методом `Map`: загрузить запись, вызвать `Rename`, сохранить. Подключить в `Program.cs` одной строкой.
-3. Если меняется схема: `dotnet ef migrations add <Name> --project src/TimeTracker -o Data/Migrations`. Инструмент `dotnet-ef` прописан в `dotnet-tools.json`, его ставит `dotnet tool restore`.
+3. Если меняется схема: `dotnet ef migrations add <Name> --project src/FalconTimeTracker -o Data/Migrations`. Инструмент `dotnet-ef` прописан в `dotnet-tools.json`, его ставит `dotnet tool restore`.
 
 ## API
 

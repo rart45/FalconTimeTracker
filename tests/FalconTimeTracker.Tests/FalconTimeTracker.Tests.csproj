@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\TimeTracker\TimeTracker.csproj" />
+    <ProjectReference Include="..\..\src\FalconTimeTracker\FalconTimeTracker.csproj" />
   </ItemGroup>
 
 </Project>

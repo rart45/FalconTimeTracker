@@ -1,7 +1,7 @@
-using TimeTracker.Data;
-using TimeTracker.Domain;
+using FalconTimeTracker.Data;
+using FalconTimeTracker.Domain;
 
-namespace TimeTracker.Features.Employees;
+namespace FalconTimeTracker.Features.Employees;
 
 public static class AddEmployee
 {

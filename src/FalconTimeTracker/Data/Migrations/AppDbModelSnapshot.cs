@@ -2,25 +2,22 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using TimeTracker.Data;
+using FalconTimeTracker.Data;
 
 #nullable disable
 
-namespace TimeTracker.Data.Migrations
+namespace FalconTimeTracker.Data.Migrations
 {
     [DbContext(typeof(AppDb))]
-    [Migration("20261030085837_Initial")]
-    partial class Initial
+    partial class AppDbModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.14");
 
-            modelBuilder.Entity("TimeTracker.Domain.Employee", b =>
+            modelBuilder.Entity("FalconTimeTracker.Domain.Employee", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -35,7 +32,7 @@ namespace TimeTracker.Data.Migrations
                     b.ToTable("Employees");
                 });
 
-            modelBuilder.Entity("TimeTracker.Domain.TimeEntry", b =>
+            modelBuilder.Entity("FalconTimeTracker.Domain.TimeEntry", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -65,16 +62,16 @@ namespace TimeTracker.Data.Migrations
                     b.ToTable("Entries");
                 });
 
-            modelBuilder.Entity("TimeTracker.Domain.TimeEntry", b =>
+            modelBuilder.Entity("FalconTimeTracker.Domain.TimeEntry", b =>
                 {
-                    b.HasOne("TimeTracker.Domain.Employee", null)
+                    b.HasOne("FalconTimeTracker.Domain.Employee", null)
                         .WithMany("Entries")
                         .HasForeignKey("EmployeeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("TimeTracker.Domain.Employee", b =>
+            modelBuilder.Entity("FalconTimeTracker.Domain.Employee", b =>
                 {
                     b.Navigation("Entries");
                 });

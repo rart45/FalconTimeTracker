@@ -1,4 +1,4 @@
-namespace TimeTracker.Domain;
+namespace FalconTimeTracker.Domain;
 
 /// <summary>Полуоткрытый период [From, To) в UTC.</summary>
 public record TimePeriod

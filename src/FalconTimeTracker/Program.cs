@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using TimeTracker.Data;
-using TimeTracker.Domain;
-using TimeTracker.Features.Employees;
-using TimeTracker.Features.Reports;
-using TimeTracker.Features.Timer;
+using FalconTimeTracker.Data;
+using FalconTimeTracker.Domain;
+using FalconTimeTracker.Features.Employees;
+using FalconTimeTracker.Features.Reports;
+using FalconTimeTracker.Features.Timer;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDb>((sp, o) =>

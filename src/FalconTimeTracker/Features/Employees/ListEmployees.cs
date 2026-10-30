@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using TimeTracker.Data;
-using TimeTracker.Domain;
+using FalconTimeTracker.Data;
+using FalconTimeTracker.Domain;
 
-namespace TimeTracker.Features.Employees;
+namespace FalconTimeTracker.Features.Employees;
 
 public record EntryDto(int Id, string Task, DateTime StartedAt, DateTime? EndedAt)
 {

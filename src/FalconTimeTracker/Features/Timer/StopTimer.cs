@@ -1,7 +1,7 @@
-using TimeTracker.Data;
-using TimeTracker.Features.Employees;
+using FalconTimeTracker.Data;
+using FalconTimeTracker.Features.Employees;
 
-namespace TimeTracker.Features.Timer;
+namespace FalconTimeTracker.Features.Timer;
 
 public static class StopTimer
 {

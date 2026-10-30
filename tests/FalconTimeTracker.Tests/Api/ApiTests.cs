@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace TimeTracker.Tests;
+namespace FalconTimeTracker.Tests;
 
 public class ApiTests : IDisposable
 {

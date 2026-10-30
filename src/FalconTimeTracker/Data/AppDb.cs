@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using TimeTracker.Domain;
+using FalconTimeTracker.Domain;
 
-namespace TimeTracker.Data;
+namespace FalconTimeTracker.Data;
 
 public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
 {
