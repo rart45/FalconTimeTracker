@@ -5,7 +5,7 @@ public class Employee(string name)
     private readonly List<TimeEntry> _entries = [];
 
     public int Id { get; private set; }
-    public string Name { get; private set; } = DomainException.RequiredText(name, 100, "Имя");
+    public string Name { get; private set; } = DomainException.RequiredText(name, 100, "имя сотрудника");
 
     // Чтобы правила работали, запущенная запись должна быть загружена. См. AppDb.FindWithRunningTimerAsync.
     public IReadOnlyCollection<TimeEntry> Entries => _entries;

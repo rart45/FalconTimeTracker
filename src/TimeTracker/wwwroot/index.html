@@ -4,107 +4,284 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Учёт времени</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='7' fill='%23F0A202'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 0 auto; padding: 16px; color: #222; }
-  h1 { font-size: 22px; } h2 { font-size: 18px; margin-top: 32px; }
-  form, .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  input { padding: 6px 8px; font: inherit; }
-  button { padding: 6px 12px; font: inherit; cursor: pointer; }
-  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #ddd; vertical-align: top; }
-  .running { color: #0a7a2f; font-weight: 600; }
-  .muted { color: #777; }
-  #error { color: #b00020; min-height: 1.2em; }
+  :root {
+    --paper: #EEF0EC;
+    --surface: #FFFFFF;
+    --ink: #1B1F1D;
+    --muted: #5E6460;
+    --line: #D3D7D1;
+    --amber: #F0A202;
+    --amber-soft: #FBE7B5;
+    --danger: #B3261E;
+    --radius: 10px;
+    --display: "Unbounded", system-ui, sans-serif;
+    --text: "Onest", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 400 16px/1.5 var(--text); font-variant-numeric: tabular-nums;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 32px 16px 64px; }
+
+  header { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: end; justify-content: space-between; }
+  h1 { font: 700 clamp(28px, 5vw, 40px)/1.05 var(--display); letter-spacing: -0.02em; margin: 0; }
+  .today { color: var(--muted); margin: 6px 0 0; }
+  h2 { font: 600 20px/1.3 var(--text); margin: 0 0 4px; }
+  section { margin-top: 48px; }
+  .hint { color: var(--muted); margin: 0 0 16px; }
+
+  input, button { font: inherit; color: inherit; }
+  input {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 9px 12px; min-width: 0;
+  }
+  input:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  button {
+    border: 1px solid var(--ink); background: var(--ink); color: var(--paper);
+    border-radius: var(--radius); padding: 9px 16px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  button:hover { background: #343A37; }
+  button.ghost { background: transparent; color: var(--ink); border-color: var(--line); font-weight: 500; }
+  button.ghost:hover, button.ghost[aria-pressed="true"] { border-color: var(--ink); }
+
+  .inline-form { display: flex; gap: 8px; }
+  .inline-form input { width: 220px; }
+
+  #error {
+    margin: 24px 0 0; padding: 10px 14px; border-left: 4px solid var(--danger);
+    background: var(--surface); color: var(--danger); border-radius: 0 var(--radius) var(--radius) 0;
+  }
+  #error:empty { display: none; }
+
+  /* Сотрудники */
+  .people { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .person {
+    display: grid; grid-template-columns: minmax(140px, 200px) 1fr auto; gap: 12px 20px; align-items: center;
+    padding: 14px 0; border-bottom: 1px solid var(--line);
+  }
+  .person .name { font-weight: 600; overflow-wrap: anywhere; }
+  .person .start { display: flex; gap: 8px; grid-column: 2 / 4; }
+  .person .start input { flex: 1; }
+  .person.running {
+    background: var(--amber-soft); border-radius: var(--radius); border-bottom-color: transparent;
+    padding: 14px 16px; margin: 6px -16px;
+  }
+  .person.running .task { overflow-wrap: anywhere; }
+  .person.running .since { color: var(--muted); font-size: 14px; display: block; }
+  .clock { display: flex; align-items: center; gap: 16px; }
+  .elapsed { font: 500 clamp(22px, 3.6vw, 30px)/1 var(--display); letter-spacing: -0.01em; }
+  .elapsed::before {
+    content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--amber); margin-right: 10px; vertical-align: middle; box-shadow: 0 0 0 3px var(--ink);
+  }
+  .empty { padding: 24px 0; color: var(--muted); border-bottom: 1px solid var(--line); margin: 0; }
+
+  /* Отчёт */
+  .period { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-bottom: 20px; }
+  .period .presets, .period .dates { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .period label { color: var(--muted); display: flex; gap: 8px; align-items: center; }
+  .report { border-top: 1px solid var(--line); }
+  .report details { border-bottom: 1px solid var(--line); }
+  .report summary {
+    display: grid; grid-template-columns: minmax(140px, 200px) 1fr 150px; gap: 20px; align-items: center;
+    padding: 14px 0; cursor: pointer; list-style: none;
+  }
+  .report summary::-webkit-details-marker { display: none; }
+  .report summary .name { font-weight: 600; overflow-wrap: anywhere; }
+  .report summary .name::after { content: " +"; color: var(--muted); font-weight: 400; }
+  .report details[open] summary .name::after { content: " −"; }
+  .report details.none summary { cursor: default; }
+  .report details.none summary .name::after { content: ""; }
+  .bar { height: 10px; background: var(--line); border-radius: 5px; overflow: hidden; }
+  .bar span { display: block; height: 100%; background: var(--ink); border-radius: 5px; }
+  .total { text-align: right; font-weight: 600; white-space: nowrap; }
+  .entries { list-style: none; margin: 0 0 16px; padding: 0 0 0 220px; }
+  .entries li { display: grid; grid-template-columns: 1fr auto; gap: 16px; padding: 6px 0; }
+  .entries .when { color: var(--muted); font-size: 14px; display: block; }
+  .entries .live { color: #8A5A00; font-weight: 600; }
+  .grand { display: flex; justify-content: space-between; padding: 16px 0 0; font-weight: 600; }
+  .grand .sum { font: 500 22px/1 var(--display); }
+
+  @media (max-width: 680px) {
+    .wrap { padding-top: 24px; }
+    .inline-form { width: 100%; }
+    .inline-form input { flex: 1; width: auto; }
+    .person { grid-template-columns: 1fr auto; }
+    .person .start { grid-column: 1 / -1; }
+    .person.running { margin: 6px 0; padding: 14px 12px; }
+    .person.running .name, .person.running .clock { grid-column: 1 / -1; }
+    .person.running .clock { justify-content: space-between; order: 3; }
+    .report summary { grid-template-columns: 1fr auto; gap: 8px 16px; }
+    .report summary .bar { grid-column: 1 / -1; order: 3; }
+    .entries { padding-left: 0; }
+  }
 </style>
 </head>
 <body>
-<h1>Учёт рабочего времени</h1>
-<p id="error"></p>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Учёт времени</h1>
+      <p class="today" id="today"></p>
+    </div>
+    <form class="inline-form" id="add-employee">
+      <input name="name" placeholder="Имя нового сотрудника" aria-label="Имя нового сотрудника" required maxlength="100" autocomplete="off">
+      <button>Добавить</button>
+    </form>
+  </header>
 
-<h2>Сотрудники</h2>
-<form id="add-employee">
-  <input name="name" placeholder="Имя сотрудника" required maxlength="100">
-  <button>Добавить</button>
-</form>
-<table>
-  <thead><tr><th>Сотрудник</th><th>Таймер</th><th></th></tr></thead>
-  <tbody id="employees"></tbody>
-</table>
+  <p id="error" role="alert"></p>
 
-<h2>Отчёт</h2>
-<form id="report-form">
-  <label>с <input type="date" name="from" required></label>
-  <label>по <input type="date" name="to" required></label>
-  <button>Показать</button>
-</form>
-<div id="report"></div>
+  <section aria-labelledby="now-title">
+    <h2 id="now-title">Сейчас</h2>
+    <p class="hint">Напишите задачу и нажмите «Начать». Таймер идёт, пока его не остановят, даже если закрыть страницу.</p>
+    <ul class="people" id="employees"></ul>
+  </section>
+
+  <section aria-labelledby="report-title">
+    <h2 id="report-title">Отчёт</h2>
+    <p class="hint">Сколько времени каждый сотрудник отработал за период. Нажмите на имя, чтобы увидеть записи.</p>
+    <form class="period" id="report-form">
+      <div class="presets" role="group" aria-label="Быстрый выбор периода">
+        <button type="button" class="ghost" data-preset="day">Сегодня</button>
+        <button type="button" class="ghost" data-preset="week">Неделя</button>
+        <button type="button" class="ghost" data-preset="month">Месяц</button>
+      </div>
+      <div class="dates">
+        <label>с <input type="date" name="from" required></label>
+        <label>по <input type="date" name="to" required></label>
+        <button>Показать</button>
+      </div>
+    </form>
+    <div id="report" aria-live="polite"></div>
+  </section>
+</div>
 
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
-const fmtDur = sec => `${Math.floor(sec / 3600)} ч ${String(Math.floor(sec % 3600 / 60)).padStart(2, '0')} мин`;
-const fmtTime = iso => new Date(iso).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' });
-const localDate = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const pad = n => String(n).padStart(2, '0');
+const fmtClock = sec => `${pad(Math.floor(sec / 3600))}:${pad(Math.floor(sec % 3600 / 60))}:${pad(sec % 60)}`;
+const fmtDur = sec => sec < 60 ? (sec ? 'меньше минуты' : '0 мин')
+  : (sec >= 3600 ? `${Math.floor(sec / 3600)} ч ` : '') + `${Math.floor(sec % 3600 / 60)} мин`;
+const fmtTime = iso => new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+const fmtDay = iso => new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+const localDate = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const secondsSince = iso => Math.max(0, Math.floor((Date.now() - new Date(iso)) / 1000));
 
 async function api(method, url, body) {
   $('#error').textContent = '';
   const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) });
-  const data = res.status === 204 ? null : await res.json().catch(() => null);
-  if (!res.ok) throw new Error(data?.error ?? `Ошибка ${res.status}`);
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(data?.error ?? `Сервер ответил ошибкой ${res.status}. Обновите страницу и попробуйте ещё раз.`);
   return data;
 }
 const showError = e => $('#error').textContent = e.message;
 
 async function loadEmployees() {
   const list = await api('GET', '/api/employees');
-  $('#employees').innerHTML = list.length ? list.map(e => e.running
-    ? `<tr><td>${esc(e.name)}</td>
-         <td class="running">● ${esc(e.running.task)} <span class="muted">с ${fmtTime(e.running.startedAt)}</span></td>
-         <td><button data-stop="${e.id}">Стоп</button></td></tr>`
-    : `<tr><td>${esc(e.name)}</td>
-         <td><input data-task="${e.id}" placeholder="Описание задачи" maxlength="500"></td>
-         <td><button data-start="${e.id}">Старт</button></td></tr>`).join('')
-    : '<tr><td colspan="3" class="muted">Сотрудников пока нет</td></tr>';
+  $('#employees').innerHTML = list.length ? list.map(e => e.running ? `
+    <li class="person running">
+      <span class="name">${esc(e.name)}</span>
+      <span class="work"><span class="task">${esc(e.running.task)}</span><span class="since">с ${fmtTime(e.running.startedAt)}</span></span>
+      <span class="clock">
+        <span class="elapsed" data-since="${e.running.startedAt}" role="timer">${fmtClock(secondsSince(e.running.startedAt))}</span>
+        <button data-stop="${e.id}">Остановить</button>
+      </span>
+    </li>` : `
+    <li class="person">
+      <span class="name">${esc(e.name)}</span>
+      <span class="start">
+        <input data-task="${e.id}" placeholder="Над чем работает" aria-label="Задача для ${esc(e.name)}" maxlength="500" autocomplete="off">
+        <button data-start="${e.id}">Начать</button>
+      </span>
+    </li>`).join('')
+    : '<li class="empty">Сотрудников пока нет. Добавьте первого в поле сверху.</li>';
 }
 
 async function loadReport() {
   const f = $('#report-form');
-  // Границы дня берём в часовом поясе браузера; "по" включительно, поэтому +1 день.
+  // Границы дней в часовом поясе браузера; «по» включительно, поэтому конец периода = следующий день 00:00.
   const from = new Date(f.from.value + 'T00:00');
   const to = new Date(f.to.value + 'T00:00');
   to.setDate(to.getDate() + 1);
   const r = await api('GET', `/api/report?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`);
-  $('#report').innerHTML = r.employees.length === 0
-    ? '<p class="muted">Сотрудников пока нет</p>'
-    : `<table><thead><tr><th>Сотрудник</th><th>Записи</th><th>Итого</th></tr></thead><tbody>
-       ${r.employees.map(row => `<tr><td>${esc(row.name)}</td><td>${row.entries.length
-          ? row.entries.map(x => `${esc(x.task)} <span class="muted">${fmtTime(x.startedAt)} – ${x.endedAt ? fmtTime(x.endedAt) : 'идёт'}, ${fmtDur(x.seconds)}</span>`).join('<br>')
-          : '<span class="muted">нет записей</span>'}</td><td>${fmtDur(row.totalSeconds)}</td></tr>`).join('')}
-       </tbody><tfoot><tr><th colspan="2">Всего</th><th>${fmtDur(r.totalSeconds)}</th></tr></tfoot></table>`;
+
+  if (!r.employees.length) { $('#report').innerHTML = '<p class="empty">Отчёт появится, когда в системе будут сотрудники.</p>'; return; }
+  const max = Math.max(...r.employees.map(x => x.totalSeconds), 1);
+  const multiDay = f.from.value !== f.to.value;
+  $('#report').innerHTML = `<div class="report">${r.employees.map(row => `
+    <details class="${row.entries.length ? '' : 'none'}">
+      <summary${row.entries.length ? '' : ' tabindex="-1"'}>
+        <span class="name">${esc(row.name)}</span>
+        <span class="bar" aria-hidden="true"><span style="width:${row.totalSeconds / max * 100}%"></span></span>
+        <span class="total">${row.entries.length ? fmtDur(row.totalSeconds) : 'нет записей'}</span>
+      </summary>
+      ${row.entries.length ? `<ul class="entries">${row.entries.map(x => `
+        <li><span>${esc(x.task)}<span class="when">${multiDay ? fmtDay(x.startedAt) + ', ' : ''}${fmtTime(x.startedAt)} – ${x.endedAt ? fmtTime(x.endedAt) : '<span class="live">идёт</span>'}</span></span>
+            <span>${fmtDur(x.seconds)}</span></li>`).join('')}</ul>` : ''}
+    </details>`).join('')}</div>
+    <div class="grand"><span>Всего за период</span><span class="sum">${fmtDur(r.totalSeconds)}</span></div>`;
+  $('#report').querySelectorAll('details.none').forEach(d => d.addEventListener('toggle', () => d.open = false));
 }
+
+function setPreset(kind) {
+  const now = new Date(), from = new Date(now);
+  if (kind === 'week') from.setDate(now.getDate() - (now.getDay() + 6) % 7);
+  if (kind === 'month') from.setDate(1);
+  const f = $('#report-form');
+  f.from.value = localDate(from);
+  f.to.value = localDate(now);
+  document.querySelectorAll('[data-preset]').forEach(b => b.setAttribute('aria-pressed', b.dataset.preset === kind));
+}
+
+const refresh = () => loadEmployees().then(loadReport);
 
 $('#add-employee').addEventListener('submit', async ev => {
   ev.preventDefault();
-  try { await api('POST', '/api/employees', { name: ev.target.name.value }); ev.target.reset(); await loadEmployees(); await loadReport(); }
+  try { await api('POST', '/api/employees', { name: ev.target.name.value }); ev.target.reset(); await refresh(); }
   catch (e) { showError(e); }
 });
 
+async function start(id) {
+  try { await api('POST', `/api/employees/${id}/timer/start`, { task: $(`[data-task="${id}"]`).value }); await refresh(); }
+  catch (e) { showError(e); }
+}
+
 $('#employees').addEventListener('click', async ev => {
-  const { start, stop } = ev.target.dataset;
-  try {
-    if (start) await api('POST', `/api/employees/${start}/timer/start`, { task: $(`[data-task="${start}"]`).value });
-    else if (stop) await api('POST', `/api/employees/${stop}/timer/stop`);
-    else return;
-    await loadEmployees(); await loadReport();
-  } catch (e) { showError(e); }
+  const { start: startId, stop } = ev.target.dataset;
+  if (startId) return start(startId);
+  if (!stop) return;
+  try { await api('POST', `/api/employees/${stop}/timer/stop`); await refresh(); }
+  catch (e) { showError(e); }
 });
 
+$('#employees').addEventListener('keydown', ev => {
+  if (ev.key === 'Enter' && ev.target.dataset.task) start(ev.target.dataset.task);
+});
+
+$('#report-form').addEventListener('click', ev => {
+  if (!ev.target.dataset.preset) return;
+  setPreset(ev.target.dataset.preset);
+  loadReport().catch(showError);
+});
+$('#report-form').addEventListener('input', () =>
+  document.querySelectorAll('[data-preset]').forEach(b => b.setAttribute('aria-pressed', 'false')));
 $('#report-form').addEventListener('submit', ev => { ev.preventDefault(); loadReport().catch(showError); });
 
-const today = localDate(new Date());
-$('#report-form').from.value = today;
-$('#report-form').to.value = today;
-loadEmployees().then(loadReport).catch(showError);
+setInterval(() => document.querySelectorAll('[data-since]').forEach(el => el.textContent = fmtClock(secondsSince(el.dataset.since))), 1000);
+// Пока кто-то работает, итоги в отчёте растут: раз в минуту подтягиваем их заново.
+setInterval(() => { if (document.querySelector('[data-since]')) loadReport().catch(showError); }, 60_000);
+
+$('#today').textContent = new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+setPreset('day');
+refresh().catch(showError);
 </script>
 </body>
 </html>
