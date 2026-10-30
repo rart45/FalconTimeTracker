@@ -1,34 +1,25 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using TimeTracker.Domain;
 
-namespace TimeTracker;
-
-public class Employee
-{
-    public int Id { get; set; }
-    public required string Name { get; set; }
-}
-
-public class TimeEntry
-{
-    public int Id { get; set; }
-    public int EmployeeId { get; set; }
-    public required string Task { get; set; }
-    public DateTime StartedAt { get; set; }
-    public DateTime? EndedAt { get; set; }
-}
+namespace TimeTracker.Data;
 
 public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
 {
     public DbSet<Employee> Employees => Set<Employee>();
     public DbSet<TimeEntry> Entries => Set<TimeEntry>();
 
+    /// <summary>Сотрудник вместе с запущенной записью, без остальной истории: этого хватает для правил таймера.</summary>
+    public Task<Employee?> FindWithRunningTimerAsync(int id) =>
+        Employees.Include(e => e.Entries.Where(x => x.EndedAt == null)).SingleOrDefaultAsync(e => e.Id == id);
+
     protected override void OnModelCreating(ModelBuilder b)
     {
-        b.Entity<TimeEntry>().HasOne<Employee>().WithMany().HasForeignKey(e => e.EmployeeId);
+        b.Entity<Employee>().HasMany(e => e.Entries).WithOne().HasForeignKey(e => e.EmployeeId);
 
-        // Не больше одного запущенного таймера на сотрудника. Защищает и от гонки двух одновременных запросов.
+        // Правило «один запущенный таймер» проверяет Employee, а индекс страхует от гонки двух одновременных запросов.
         b.Entity<TimeEntry>().HasIndex(e => e.EmployeeId).IsUnique().HasFilter("EndedAt IS NULL");
+        b.Entity<TimeEntry>().HasIndex(e => e.StartedAt);
     }
 
     // SQLite не хранит DateTimeKind: без конвертера время читается как Unspecified
