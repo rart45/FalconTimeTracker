@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Учёт времени</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 0 auto; padding: 16px; color: #222; }
+  h1 { font-size: 22px; } h2 { font-size: 18px; margin-top: 32px; }
+  form, .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  input { padding: 6px 8px; font: inherit; }
+  button { padding: 6px 12px; font: inherit; cursor: pointer; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #ddd; vertical-align: top; }
+  .running { color: #0a7a2f; font-weight: 600; }
+  .muted { color: #777; }
+  #error { color: #b00020; min-height: 1.2em; }
+</style>
+</head>
+<body>
+<h1>Учёт рабочего времени</h1>
+<p id="error"></p>
+
+<h2>Сотрудники</h2>
+<form id="add-employee">
+  <input name="name" placeholder="Имя сотрудника" required maxlength="100">
+  <button>Добавить</button>
+</form>
+<table>
+  <thead><tr><th>Сотрудник</th><th>Таймер</th><th></th></tr></thead>
+  <tbody id="employees"></tbody>
+</table>
+
+<h2>Отчёт</h2>
+<form id="report-form">
+  <label>с <input type="date" name="from" required></label>
+  <label>по <input type="date" name="to" required></label>
+  <button>Показать</button>
+</form>
+<div id="report"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+const fmtDur = sec => `${Math.floor(sec / 3600)} ч ${String(Math.floor(sec % 3600 / 60)).padStart(2, '0')} мин`;
+const fmtTime = iso => new Date(iso).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' });
+const localDate = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+async function api(method, url, body) {
+  $('#error').textContent = '';
+  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) });
+  const data = res.status === 204 ? null : await res.json().catch(() => null);
+  if (!res.ok) throw new Error(data?.error ?? `Ошибка ${res.status}`);
+  return data;
+}
+const showError = e => $('#error').textContent = e.message;
+
+async function loadEmployees() {
+  const list = await api('GET', '/api/employees');
+  $('#employees').innerHTML = list.length ? list.map(e => e.running
+    ? `<tr><td>${esc(e.name)}</td>
+         <td class="running">● ${esc(e.running.task)} <span class="muted">с ${fmtTime(e.running.startedAt)}</span></td>
+         <td><button data-stop="${e.id}">Стоп</button></td></tr>`
+    : `<tr><td>${esc(e.name)}</td>
+         <td><input data-task="${e.id}" placeholder="Описание задачи" maxlength="500"></td>
+         <td><button data-start="${e.id}">Старт</button></td></tr>`).join('')
+    : '<tr><td colspan="3" class="muted">Сотрудников пока нет</td></tr>';
+}
+
+async function loadReport() {
+  const f = $('#report-form');
+  // Границы дня берём в часовом поясе браузера; "по" включительно, поэтому +1 день.
+  const from = new Date(f.from.value + 'T00:00');
+  const to = new Date(f.to.value + 'T00:00');
+  to.setDate(to.getDate() + 1);
+  const r = await api('GET', `/api/report?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`);
+  $('#report').innerHTML = r.employees.length === 0
+    ? '<p class="muted">Сотрудников пока нет</p>'
+    : `<table><thead><tr><th>Сотрудник</th><th>Записи</th><th>Итого</th></tr></thead><tbody>
+       ${r.employees.map(row => `<tr><td>${esc(row.name)}</td><td>${row.entries.length
+          ? row.entries.map(x => `${esc(x.task)} <span class="muted">${fmtTime(x.startedAt)} – ${x.endedAt ? fmtTime(x.endedAt) : 'идёт'}, ${fmtDur(x.seconds)}</span>`).join('<br>')
+          : '<span class="muted">нет записей</span>'}</td><td>${fmtDur(row.totalSeconds)}</td></tr>`).join('')}
+       </tbody><tfoot><tr><th colspan="2">Всего</th><th>${fmtDur(r.totalSeconds)}</th></tr></tfoot></table>`;
+}
+
+$('#add-employee').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  try { await api('POST', '/api/employees', { name: ev.target.name.value }); ev.target.reset(); await loadEmployees(); await loadReport(); }
+  catch (e) { showError(e); }
+});
+
+$('#employees').addEventListener('click', async ev => {
+  const { start, stop } = ev.target.dataset;
+  try {
+    if (start) await api('POST', `/api/employees/${start}/timer/start`, { task: $(`[data-task="${start}"]`).value });
+    else if (stop) await api('POST', `/api/employees/${stop}/timer/stop`);
+    else return;
+    await loadEmployees(); await loadReport();
+  } catch (e) { showError(e); }
+});
+
+$('#report-form').addEventListener('submit', ev => { ev.preventDefault(); loadReport().catch(showError); });
+
+const today = localDate(new Date());
+$('#report-form').from.value = today;
+$('#report-form').to.value = today;
+loadEmployees().then(loadReport).catch(showError);
+</script>
+</body>
+</html>
